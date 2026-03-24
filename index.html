@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload de Mídia</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white; /* Texto claro para contrastar com o fundo */
+        }
+
+        /* Camada de fundo fixa e desfocada */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('./public/img/IMG_7362.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            filter: blur(8px) brightness(0.7); /* Reduz nitidez e brilho */
+            z-index: -1;
+            transform: scale(1.05); /* Remove bordas brancas do blur */
+        }
+
+        h1 {
+            text-align: center;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+        }
+
+        .upload-box {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(5px); /* Efeito de vidro no botão */
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 15px;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .gallery img,
+        .gallery video {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border: 2px solid white;
+        }
+
+        /* Container do Spinner */
+        #loader-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px auto;
+        }
+
+        /* O círculo giratório */
+        #loader-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px auto;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #4CAF50;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        #status-text {
+            margin-top: 10px;
+            font-size: 14px;
+            color: white;
+            text-shadow: 1px 1px 2px black;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>📸 Adicione sua mídia digital 💕</h1>
+
+    <div class="upload-box">
+        <input 
+            type="file" 
+            accept="image/*,video/*" 
+            multiple 
+            capture="environment"
+            onchange="previewMedia(event)"
+        >
+    </div>
+
+    <div id="loader-container">
+        <div class="spinner"></div>
+        <p id="status-text">Processando...</p>
+    </div>
+
+    <div class="gallery" id="gallery"></div>
+
+    <script>
+
+        const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxU_rrvjBmTZVhiXNl9n0Fi9be0-zvJhoK0PRm0LPhZB05vW0xLP-P_ZRNboZ3BpQ-t/exec';
+        const MAX_FILE_SIZE_MB = 50;
+                
+        async function previewMedia(event) {
+            const files = event.target.files;
+            const loaderContainer = document.getElementById('loader-container');
+            const statusText = document.getElementById('status-text');
+            const gallery = document.getElementById('gallery');
+            
+            if (files.length > 0) loaderContainer.style.display = 'flex';
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileSizeMB = file.size / (1024 * 1024);
+
+                // Validação de Tamanho
+                if (fileSizeMB > MAX_FILE_SIZE_MB) {
+                    alert(`O arquivo "${file.name}" é muito grande (${fileSizeMB.toFixed(1)}MB). O limite é de ${MAX_FILE_SIZE_MB}MB.`);
+                    continue; // Pula este arquivo e vai para o próximo
+                }
+
+                statusText.innerText = `Enviando ${i + 1} de ${files.length}: ${file.name}`;
+                
+                // Gera a prévia visual
+                const url = URL.createObjectURL(file);
+                renderizarNaGaleria(file, url);
+
+                try {
+                    await enviarParaGoogleDrive(file);
+                } catch (error) {
+                    console.error("Erro no arquivo:", file.name);
+                }
+            }
+            
+            statusText.innerText = "✅ Finalizado!";
+            setTimeout(() => { loaderContainer.style.display = 'none'; }, 3000);
+        }
+
+        function enviarParaGoogleDrive(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = function () {
+                    const base64Data = reader.result.split(',')[1];
+                    fetch(APP_SCRIPT_URL, {
+                        method: "POST",
+                        body: JSON.stringify({
+                            base64: base64Data,
+                            type: file.type,
+                            name: file.name
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => resolve(data))
+                    .catch(err => reject(err));
+                };
+            });
+        }
+
+        function renderizarNaGaleria(file, url) {
+            const gallery = document.getElementById('gallery');
+            const elemento = file.type.startsWith('image') ? document.createElement('img') : document.createElement('video');
+            elemento.src = url;
+            if (file.type.startsWith('video')) elemento.controls = true;
+            gallery.appendChild(elemento);
+        }
+
+
+
+    </script>
+
+</body>
+</html>

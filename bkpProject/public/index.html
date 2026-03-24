@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Media Event</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body class="center">
+<h1>📸 Media Event</h1>
+<p>Escaneie o QR Code ou acesse seu evento</p>
+<input id="eventId" placeholder="Código do Evento">
+<button onclick="enter()">Entrar</button>
+<script>
+function enter(){
+  const id=document.getElementById('eventId').value;
+  if(id) location.href='event.html?event='+id;
+}
+</script>
+</body>
+</html>
