@@ -165,7 +165,7 @@
                 
                 // Gera a prévia visual
                 const url = URL.createObjectURL(file);
-                renderizarNaGaleria(file, url);
+                renderMedia(file, url);
 
                 try {
                     await enviarParaGoogleDrive(file);
