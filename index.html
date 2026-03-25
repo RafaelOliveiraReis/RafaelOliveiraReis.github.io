@@ -126,7 +126,7 @@
     <div class="gallery" id="gallery"></div>
 
     <script>
-        const APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxU_rrvjBmTZVhiXNl9n0Fi9be0-zvJhoK0PRm0LPhZB05vW0xLP-P_ZRNboZ3BpQ-t/exec';
+        const APP_SCRIPT_URL = 'https://script.google.com/macros/library/d/1dkaYKaUAl_g-jmZhVlnKWo6eiXvX0sZUytN5gHfD5X7f77zjyXTlRSOt/3';
         
         const MAX_FILE_SIZE_MB = 50;
 
@@ -142,6 +142,41 @@
                 }
             } catch(e) { console.log("Iniciando galeria vazia."); }
         };
+
+        async function previewMedia(event) {
+            const files = event.target.files;
+            const loaderContainer = document.getElementById('loader-container');
+            const statusText = document.getElementById('status-text');
+            const gallery = document.getElementById('gallery');
+            
+            if (files.length > 0) loaderContainer.style.display = 'flex';
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileSizeMB = file.size / (1024 * 1024);
+
+                // Validação de Tamanho
+                if (fileSizeMB > MAX_FILE_SIZE_MB) {
+                    alert(`O arquivo "${file.name}" é muito grande (${fileSizeMB.toFixed(1)}MB). O limite é de ${MAX_FILE_SIZE_MB}MB.`);
+                    continue; // Pula este arquivo e vai para o próximo
+                }
+
+                statusText.innerText = `Enviando ${i + 1} de ${files.length}: ${file.name}`;
+                
+                // Gera a prévia visual
+                const url = URL.createObjectURL(file);
+                renderizarNaGaleria(file, url);
+
+                try {
+                    await enviarParaGoogleDrive(file);
+                } catch (error) {
+                    console.error("Erro no arquivo:", file.name);
+                }
+            }
+            
+            statusText.innerText = "✅ Finalizado!";
+            setTimeout(() => { loaderContainer.style.display = 'none'; }, 3000);
+        }
 
         // 2. Processar Novos Uploads
         async function handleUpload(event) {
@@ -198,7 +233,6 @@
             document.getElementById('gallery').prepend(el);
         }
     </script>
-
 
 </body>
 </html>
