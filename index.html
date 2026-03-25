@@ -194,7 +194,34 @@
             gallery.appendChild(elemento);
         }
 
+        // Execute isso quando a página carregar
+        window.onload = async () => {
+            const gallery = document.getElementById('gallery');
+            
+            try {
+                // Chamada GET para o seu script
+                const response = await fetch(APP_SCRIPT_URL);
+                const fotosAntigas = await response.json();
 
+                if (fotosAntigas.length > 0) {
+                    // Adiciona um título sutil antes das fotos existentes
+                    const label = document.createElement('p');
+                    label.innerText = "✨ Momentos já compartilhados:";
+                    label.style.gridColumn = "1 / -1";
+                    label.style.textAlign = "center";
+                    gallery.appendChild(label);
+
+                    fotosAntigas.forEach(foto => {
+                        const img = document.createElement('img');
+                        img.src = foto.url;
+                        img.style.opacity = "0.7"; // Diferencia fotos antigas das novas
+                        gallery.appendChild(img);
+                    });
+                }
+            } catch (err) {
+                console.log("Ainda não há fotos no Drive ou erro na busca.");
+            }
+        };
 
     </script>
 
